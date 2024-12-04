@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,26 +42,57 @@
         }
 
         @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes shuffle {
-            0% { transform: translateX(-5px) rotate(-5deg); }
-            50% { transform: translateX(5px) rotate(5deg); }
-            100% { transform: translateX(-5px) rotate(-5deg); }
+            0% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+
+            50% {
+                transform: translateX(5px) rotate(5deg);
+            }
+
+            100% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
         }
 
         .glass-panel {
@@ -168,12 +200,14 @@
             font-size: 3rem;
             position: absolute;
             left: -150px;
-            transition: all 0.2s ease-out;
+            transition: all 0.3s ease-out;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
         }
 
-        .card.bounce {
-            animation: bounce 0.3s ease-out;
+        .card:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .story {
@@ -199,18 +233,19 @@
         }
     </style>
 </head>
+
 <body>
     <div id="tsparticles"></div>
     <div class="container">
         <!-- Container content remains the same -->
         <div class="glass-panel">
             <h1>Emoji Story Cards</h1>
-            
+
             <div class="controls">
                 <button onclick="drawCard()" id="drawButton">Draw Card</button>
                 <button onclick="resetCards()">Try Again</button>
                 <button onclick="generateStory()" id="storyButton" disabled>Write Story</button>
-                
+
                 <select id="levelSelect">
                     {% for level, description in levels.items() %}
                     <option value="{{ level }}">{{ level }} - {{ description }}</option>
@@ -221,9 +256,9 @@
             <div class="card-table" id="cardTable">
                 <div class="card-slots" id="cardSlots"></div>
             </div>
-            
+
             <div class="loading">Generating story...</div>
-            
+
             <div class="story" id="storyDisplay"></div>
         </div>
     </div>
@@ -338,55 +373,87 @@
                 method: 'POST'
             });
             const data = await response.json();
-            
+
             emojis.push(data.emoji);
-            
+
             const card = document.createElement('div');
             card.className = 'card';
             card.textContent = data.emoji;
-            
+
             const cardTable = document.getElementById('cardTable');
             cardTable.appendChild(card);
             cards.push(card);
-            
+
             const cardWidth = 120;
             const gap = 16;
             const position = (cardWidth + gap) * (cards.length - 1);
-            
+
             const slots = document.querySelectorAll('.card-slot');
             slots[cards.length - 1].classList.add('filled');
-            
+
             setTimeout(() => {
                 card.style.left = `${position}px`;
                 card.classList.add('bounce');
                 setTimeout(() => card.classList.remove('bounce'), 300); // Reduced from 500ms
             }, 30); // Reduced from 50ms
-            
+
+            card.addEventListener('click', () => removeCard(card)); // Attach click event to remove the card
+
             const storyButton = document.getElementById('storyButton');
             storyButton.disabled = false;
             if (!storyButton.classList.contains('button-pulse')) {
                 storyButton.classList.add('button-pulse');
             }
-            
+
             drawButton.disabled = cards.length >= MAX_CARDS;
         }
+
+        function removeCard(card) {
+            const cardIndex = cards.indexOf(card);
+            if (cardIndex > -1) {
+                cards.splice(cardIndex, 1);
+                emojis.splice(cardIndex, 1);
+
+                const slots = document.querySelectorAll('.card-slot');
+                slots[cardIndex].classList.remove('filled');
+
+                card.remove();
+
+                // Rearrange remaining cards
+                cards.forEach((c, index) => {
+                    const position = (120 + 16) * index; // Card width + gap
+                    c.style.left = `${position}px`;
+                });
+
+                const drawButton = document.getElementById('drawButton');
+                drawButton.disabled = false;
+
+                // Disable story button if no cards are left
+                if (cards.length === 0) {
+                    const storyButton = document.getElementById('storyButton');
+                    storyButton.disabled = true;
+                    storyButton.classList.remove('button-pulse');
+                }
+            }
+        }
+
 
         function resetCards() {
             const cardTable = document.getElementById('cardTable');
             cards.forEach(card => cardTable.removeChild(card));
             cards = [];
             emojis = [];
-            
+
             document.querySelectorAll('.card-slot').forEach(slot => {
                 slot.classList.remove('filled');
             });
-            
+
             const storyButton = document.getElementById('storyButton');
             storyButton.disabled = true;
             storyButton.classList.remove('button-pulse');
             document.getElementById('drawButton').disabled = false;
             document.getElementById('storyDisplay').textContent = '';
-            
+
             resetParticles();
         }
 
@@ -394,13 +461,13 @@
             const loadingDiv = document.querySelector('.loading');
             const storyDisplay = document.getElementById('storyDisplay');
             const level = document.getElementById('levelSelect').value;
-            
+
             loadingDiv.style.display = 'block';
             storyDisplay.textContent = '';
-            
+
             // Update particles for story generation
             updateParticlesForStory();
-            
+
             try {
                 const response = await fetch('/generate_story', {
                     method: 'POST',
@@ -412,16 +479,16 @@
                         level: level
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.error) {
                     throw new Error(data.error);
                 }
-                
+
                 storyDisplay.textContent = data.story;
                 document.getElementById('storyButton').classList.remove('button-pulse');
-                
+
                 // Reset particles after story generation
                 resetParticles();
             } catch (error) {
@@ -432,10 +499,11 @@
         }
 
         // Initialize on page load
-        window.onload = async function() {
+        window.onload = async function () {
             initializeCardSlots();
             await initializeParticles();
         };
     </script>
 </body>
+
 </html>
