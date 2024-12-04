@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Story Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            position: relative;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 2rem;
+            margin: 1rem 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 0.8rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(5px);
+        }
+
+        option {
+            background: #333;
+            color: white;
+        }
+
+        .card-table {
+            width: 100%;
+            height: 200px;
+            margin: 2rem 0;
+            position: relative;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .card {
+            width: 120px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            position: absolute;
+            left: -150px;
+            transition: all 0.3s ease-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .story {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2rem;
+            border-radius: 10px;
+            color: white;
+            margin-top: 2rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading {
+            display: none;
+            color: white;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="glass-panel">
+            <h1>Emoji Story Cards</h1>
+            
+            <div class="controls">
+                <button onclick="drawCard()" id="drawButton">Draw Card</button>
+                <button onclick="resetCards()">Try Again</button>
+                <button onclick="generateStory()" id="storyButton" disabled>Write Story</button>
+                
+                <select id="levelSelect">
+                    {% for level, description in levels.items() %}
+                    <option value="{{ level }}">{{ level }} - {{ description }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="card-table" id="cardTable"></div>
+            
+            <div class="loading">Generating story...</div>
+            
+            <div class="story" id="storyDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        let cards = [];
+        let emojis = [];
+        const MAX_CARDS = 6;
+
+        async function drawCard() {
+            if (cards.length >= MAX_CARDS) {
+                return;
+            }
+
+            const response = await fetch('/draw_card', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            emojis.push(data.emoji);
+            
+            // Create card element
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.textContent = data.emoji;
+            
+            const cardTable = document.getElementById('cardTable');
+            cardTable.appendChild(card);
+            cards.push(card);
+            
+            // Calculate position
+            const cardWidth = 120;
+            const gap = 16; // 1rem
+            const position = (cardWidth + gap) * (cards.length - 1);
+            
+            // Trigger animation after a brief delay
+            setTimeout(() => {
+                card.style.left = `${position}px`;
+            }, 50);
+            
+            // Update button states
+            document.getElementById('storyButton').disabled = false;
+            document.getElementById('drawButton').disabled = cards.length >= MAX_CARDS;
+        }
+
+        function resetCards() {
+            const cardTable = document.getElementById('cardTable');
+            cards.forEach(card => cardTable.removeChild(card));
+            cards = [];
+            emojis = [];
+            document.getElementById('storyButton').disabled = true;
+            document.getElementById('drawButton').disabled = false;
+            document.getElementById('storyDisplay').textContent = '';
+        }
+
+        async function generateStory() {
+            const loadingDiv = document.querySelector('.loading');
+            const storyDisplay = document.getElementById('storyDisplay');
+            const level = document.getElementById('levelSelect').value;
+            
+            loadingDiv.style.display = 'block';
+            storyDisplay.textContent = '';
+            
+            try {
+                const response = await fetch('/generate_story', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emojis: emojis,
+                        level: level
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                storyDisplay.textContent = data.story;
+            } catch (error) {
+                storyDisplay.textContent = 'Error generating story: ' + error.message;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
