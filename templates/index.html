@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emoji Story Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tsparticles/2.12.0/tsparticles.bundle.min.js"></script>
     <style>
+        /* Previous styles remain the same */
         * {
             margin: 0;
             padding: 0;
@@ -17,7 +19,25 @@
             overflow-x: hidden;
             background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
+            animation: gradient 120s ease infinite;
+        }
+
+        #tsparticles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            z-index: 2;
         }
 
         @keyframes gradient {
@@ -26,11 +46,21 @@
             100% { background-position: 0% 50%; }
         }
 
-        .container {
-            position: relative;
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 2rem;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shuffle {
+            0% { transform: translateX(-5px) rotate(-5deg); }
+            50% { transform: translateX(5px) rotate(5deg); }
+            100% { transform: translateX(-5px) rotate(-5deg); }
         }
 
         .glass-panel {
@@ -72,24 +102,28 @@
             transform: none;
         }
 
+        .button-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .shuffling {
+            animation: shuffle 0.3s ease-in-out;
+        }
+
         select {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.4);
             padding: 0.8rem;
             border-radius: 8px;
-            color: white;
+            color: rgba(0, 0, 0, 0.356);
             font-size: 1rem;
             backdrop-filter: blur(5px);
         }
 
-        option {
-            background: #333;
-            color: white;
-        }
 
         .card-table {
             width: 100%;
-            height: 200px;
+            min-height: 200px;
             margin: 2rem 0;
             position: relative;
             display: flex;
@@ -98,10 +132,33 @@
             align-items: center;
         }
 
+        .card-slots {
+            position: absolute;
+            display: flex;
+            gap: 1rem;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card-slot {
+            width: 120px;
+            height: 180px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .card-slot.filled {
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
         .card {
             width: 120px;
             height: 180px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -111,8 +168,12 @@
             font-size: 3rem;
             position: absolute;
             left: -150px;
-            transition: all 0.3s ease-out;
+            transition: all 0.2s ease-out;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.bounce {
+            animation: bounce 0.3s ease-out;
         }
 
         .story {
@@ -120,6 +181,7 @@
             padding: 2rem;
             border-radius: 10px;
             color: white;
+            font-size: 1.5rem;
             margin-top: 2rem;
             backdrop-filter: blur(5px);
         }
@@ -138,7 +200,9 @@
     </style>
 </head>
 <body>
+    <div id="tsparticles"></div>
     <div class="container">
+        <!-- Container content remains the same -->
         <div class="glass-panel">
             <h1>Emoji Story Cards</h1>
             
@@ -154,7 +218,9 @@
                 </select>
             </div>
 
-            <div class="card-table" id="cardTable"></div>
+            <div class="card-table" id="cardTable">
+                <div class="card-slots" id="cardSlots"></div>
+            </div>
             
             <div class="loading">Generating story...</div>
             
@@ -165,12 +231,108 @@
     <script>
         let cards = [];
         let emojis = [];
-        const MAX_CARDS = 6;
+        let particlesInstance;
+        const MAX_CARDS = 7;
+
+        // Initialize card slots
+        function initializeCardSlots() {
+            const slotsContainer = document.getElementById('cardSlots');
+            for (let i = 0; i < MAX_CARDS; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'card-slot';
+                slotsContainer.appendChild(slot);
+            }
+        }
+
+        // Initialize particles with default configuration
+        async function initializeParticles() {
+            particlesInstance = await tsParticles.load("tsparticles", {
+                particles: {
+                    number: {
+                        value: 100,
+                        density: {
+                            enable: true,
+                            value_area: 800
+                        }
+                    },
+                    color: {
+                        value: "#ffffff"
+                    },
+                    opacity: {
+                        value: 0.3,
+                        animation: {
+                            enable: true,
+                            speed: 1,
+                            minimumValue: 0.1,
+                            sync: false
+                        }
+                    },
+                    size: {
+                        value: 3,
+                        random: true
+                    },
+                    move: {
+                        enable: true,
+                        speed: 1,
+                        direction: "none",
+                        random: true,
+                        out_mode: "out"
+                    }
+                },
+                interactivity: {
+                    events: {
+                        onhover: {
+                            enable: true,
+                            mode: "repulse"
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update particles for story generation
+        function updateParticlesForStory() {
+            if (particlesInstance) {
+                //particlesInstance.options.particles.color.value = ["#FF4D4D", "#4DFF4D", "#4D4DFF", "#FFFF4D"];
+                particlesInstance.options.particles.move.speed = 3;
+                particlesInstance.options.particles.size.value = 5;
+                particlesInstance.options.particles.opacity.value = 0.7;
+                particlesInstance.options.particles.opacity.animation = {
+                    enable: true,
+                    speed: 3,
+                    minimumValue: 0.3,
+                    sync: false
+                };
+                particlesInstance.refresh();
+            }
+        }
+
+        // Function to reset particles to default
+        function resetParticles() {
+            if (particlesInstance) {
+                particlesInstance.options.particles.color.value = "#ffffff";
+                particlesInstance.options.particles.move.speed = 1;
+                particlesInstance.options.particles.size.value = 3;
+                particlesInstance.options.particles.opacity.value = 0.3;
+                particlesInstance.options.particles.opacity.animation = {
+                    enable: true,
+                    speed: 0.5,
+                    minimumValue: 0.1,
+                    sync: false
+                };
+                particlesInstance.refresh();
+            }
+        }
 
         async function drawCard() {
             if (cards.length >= MAX_CARDS) {
                 return;
             }
+
+            const drawButton = document.getElementById('drawButton');
+            drawButton.classList.add('shuffling');
+            await new Promise(resolve => setTimeout(resolve, 300)); // Reduced from 500ms
+            drawButton.classList.remove('shuffling');
 
             const response = await fetch('/draw_card', {
                 method: 'POST'
@@ -179,7 +341,6 @@
             
             emojis.push(data.emoji);
             
-            // Create card element
             const card = document.createElement('div');
             card.className = 'card';
             card.textContent = data.emoji;
@@ -188,19 +349,26 @@
             cardTable.appendChild(card);
             cards.push(card);
             
-            // Calculate position
             const cardWidth = 120;
-            const gap = 16; // 1rem
+            const gap = 16;
             const position = (cardWidth + gap) * (cards.length - 1);
             
-            // Trigger animation after a brief delay
+            const slots = document.querySelectorAll('.card-slot');
+            slots[cards.length - 1].classList.add('filled');
+            
             setTimeout(() => {
                 card.style.left = `${position}px`;
-            }, 50);
+                card.classList.add('bounce');
+                setTimeout(() => card.classList.remove('bounce'), 300); // Reduced from 500ms
+            }, 30); // Reduced from 50ms
             
-            // Update button states
-            document.getElementById('storyButton').disabled = false;
-            document.getElementById('drawButton').disabled = cards.length >= MAX_CARDS;
+            const storyButton = document.getElementById('storyButton');
+            storyButton.disabled = false;
+            if (!storyButton.classList.contains('button-pulse')) {
+                storyButton.classList.add('button-pulse');
+            }
+            
+            drawButton.disabled = cards.length >= MAX_CARDS;
         }
 
         function resetCards() {
@@ -208,9 +376,18 @@
             cards.forEach(card => cardTable.removeChild(card));
             cards = [];
             emojis = [];
-            document.getElementById('storyButton').disabled = true;
+            
+            document.querySelectorAll('.card-slot').forEach(slot => {
+                slot.classList.remove('filled');
+            });
+            
+            const storyButton = document.getElementById('storyButton');
+            storyButton.disabled = true;
+            storyButton.classList.remove('button-pulse');
             document.getElementById('drawButton').disabled = false;
             document.getElementById('storyDisplay').textContent = '';
+            
+            resetParticles();
         }
 
         async function generateStory() {
@@ -220,6 +397,9 @@
             
             loadingDiv.style.display = 'block';
             storyDisplay.textContent = '';
+            
+            // Update particles for story generation
+            updateParticlesForStory();
             
             try {
                 const response = await fetch('/generate_story', {
@@ -240,12 +420,22 @@
                 }
                 
                 storyDisplay.textContent = data.story;
+                document.getElementById('storyButton').classList.remove('button-pulse');
+                
+                // Reset particles after story generation
+                resetParticles();
             } catch (error) {
                 storyDisplay.textContent = 'Error generating story: ' + error.message;
             } finally {
                 loadingDiv.style.display = 'none';
             }
         }
+
+        // Initialize on page load
+        window.onload = async function() {
+            initializeCardSlots();
+            await initializeParticles();
+        };
     </script>
 </body>
 </html>

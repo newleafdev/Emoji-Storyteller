@@ -5,13 +5,55 @@ import emoji
 
 app = Flask(__name__)
 
-MODEL = "gemma2:9b"
+MODEL = "llama3.2:3b"
 
 EMOJIS = ["😀", "😎", "🌟", "🌈", "🌸", "🐶", "🐱", "🦁", "🐯", "🐮", "🐷", "🦊", "🐸", 
           "🐙", "🦋", "🌺", "🌲", "🌍", "⭐", "🌙", "☀️", "🌤", "🌈", "🍎", "🍕", "🎨", 
           "🎭", "🎪", "🎡", "🚗", "✈️", "🚀", "🏰", "🗽", "🎸", "📚", "⚽", "🎮", "🎲"]
 
-EMOJIS = list(emoji.EMOJI_DATA.keys())
+EMOJIS = [
+    "😀", "😎", "🌟", "🌈", "🌸", "🐶", "🐱", "🦁", "🐯", "🐮", "🐷", "🦊", "🐸", "🐙", "🦋", "🌺", 
+    "🌲", "🌍", "⭐", "🌙", "☀️", "🌤", "🌈", "🍎", "🍕", "🎨", "🎭", "🎪", "🎡", "🚗", "✈️", "🚀", 
+    "🏰", "🗽", "🎸", "📚", "⚽", "🎮", "🎲", 
+    # Previous additions:
+    "👩‍🎤", "🧙‍♂️", "🧚‍♀️", "🧛‍♂️", "🤖", "👮‍♀️", "🧜‍♀️", "🤠", 
+    "🐉", "🦄", "👻", "👽", 
+    "🐦", "🦅", "🐋", "🦓", "🐘", 
+    "🏞️", "🏜️", "🌋", "🪐", "🏝️", "🌊", 
+    "📜", "🔮", "🗡️", "🛡️", "🎁", 
+    "🍇", "🍫", "🍹", "🍵", 
+    "🚂", "⛵", "🛸", "🚲", 
+    "❤️", "🔥", "🌪️", "💡", "🌀", 
+    "🎆", "🎯", "🎤", "🎹", "🪘",
+    # New suggestions:
+    # Emotions and abstract concepts:
+    "😢", "😂", "😡", "🤔", "😱", "🥳", "🤩", "😇", "😈", "😴", 
+    # Relationships:
+    "🤝", "💏", "👨‍👩‍👧", "👨‍❤️‍👨", "👩‍❤️‍👩", 
+    # Professions:
+    "👩‍⚕️", "👨‍🍳", "👩‍🚒", "👨‍🏫", "👩‍🔬", "👩‍⚖️",
+    # Fantasy objects:
+    "🪄", "🧙‍♀️", "⚔️", "🧪", "📖",
+    # Travel and landmarks:
+    "🗻", "🌁", "🌅", "🛤️", "🗿",
+    # Time and seasons:
+    "🕰️", "⏳", "⌛", "⛅", "❄️", "🍂", "🌱",
+    # Activities and tools:
+    "🧩", "🔧", "⚙️", "🎯", "🧵", "🪡", "🪚", "🎳", "🥋",
+    # Animals:
+    "🦥", "🦦", "🦜", "🦂", "🐞", "🦑", "🐢", "🐨",
+    # Vehicles:
+    "🚤", "🚁", "🛶", "🚜",
+    # Technology:
+    "💻", "📱", "📡", "🔋", "📟",
+    # Treasure and riches:
+    "💎", "💰", "🏺", "📿", "🪙",
+    # Miscellaneous:
+    "🧸", "🛏️", "📌", "📍", "🔮", "📫", "🕊️"
+]
+
+
+#EMOJIS = list(emoji.EMOJI_DATA.keys())
 
 SYSTEM_PROMPT = "You are an expert in second language education. You will write stories by considering the given list of emoji and you will place them appropriately in a way that makes it easy to understand. You will write short stories at the CEFR level requested. You will include the provided emoji in your story. You will always write gramatically correct sentences at an appropriate level. Your response should only include the story content as you are producing writing."
 
